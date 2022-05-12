@@ -1,0 +1,60 @@
+version: '3'
+
+services:
+  hadoop1:
+    build:
+      context: .
+      cache_from:
+
+    container_name: hadoop1
+    hostname: node1.kinghtdom.com
+    working_dir: /www
+    volumes:
+      - bigdata:/www/
+    ports:
+      - '9870:9870'
+      - '8088:8088'
+    networks:
+      default:
+        - ipv4_address: 172.25.0.3
+
+  hadoop2:
+    build:
+      context: .
+      cache_from:
+
+    container_name: hadoop2
+    hostname: node2.kinghtdom.com
+    working_dir: /www
+    volumes:
+      - bigdata:/www/
+    networks:
+      default:
+        - ipv4_address: 172.25.0.4
+
+  hadoop3:
+    build:
+      context: .
+      cache_from:
+        hadoop3.3-cluster
+    container_name: hadoop3
+    hostname: node3.kinghtdom.com
+    working_dir: /www
+    volumes:
+      - bigdata:/www/
+    networks:
+      default:
+        - ipv4_address: 172.25.0.5
+
+volumes:
+  bigdata:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /Users/edgar/Documents/www/BigData/src
+
+networks:
+  default:
+    external:
+      name: bigdata

@@ -2,7 +2,7 @@
 
 docker stop hadoop3.3-cluster
 docker rm hadoop3.3-cluster
-docker build -t hadoop3.3-cluster .
+docker build -t kinghtdom/hadoop3.3-cluster .
 docker network create --driver=bridge hadoop
 
 docker run -it --name hadoop3.3-cluster \
