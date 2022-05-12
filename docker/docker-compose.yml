@@ -2,10 +2,7 @@ version: '3'
 
 services:
   hadoop1:
-    build:
-      context: .
-      cache_from:
-
+    image: kinghtdom/hadoop3.3-cluster:latest
     container_name: hadoop1
     hostname: node1.kinghtdom.com
     working_dir: /www
@@ -16,13 +13,10 @@ services:
       - '8088:8088'
     networks:
       default:
-        - ipv4_address: 172.25.0.3
+        ipv4_address: 172.25.0.3
 
   hadoop2:
-    build:
-      context: .
-      cache_from:
-
+    image: kinghtdom/hadoop3.3-cluster:latest
     container_name: hadoop2
     hostname: node2.kinghtdom.com
     working_dir: /www
@@ -30,13 +24,10 @@ services:
       - bigdata:/www/
     networks:
       default:
-        - ipv4_address: 172.25.0.4
+        ipv4_address: 172.25.0.4
 
   hadoop3:
-    build:
-      context: .
-      cache_from:
-        hadoop3.3-cluster
+    image: kinghtdom/hadoop3.3-cluster:latest
     container_name: hadoop3
     hostname: node3.kinghtdom.com
     working_dir: /www
@@ -44,7 +35,7 @@ services:
       - bigdata:/www/
     networks:
       default:
-        - ipv4_address: 172.25.0.5
+        ipv4_address: 172.25.0.5
 
 volumes:
   bigdata:
