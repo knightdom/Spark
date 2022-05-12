@@ -60,5 +60,9 @@ ADD ./hdfs-site.xml $HADOOP_CONF_DIR
 ADD ./mapred-site.xml $HADOOP_CONF_DIR
 ADD ./workers $HADOOP_CONF_DIR
 ADD ./yarn-site.xml $HADOOP_CONF_DIR
+ADD ./autoservice.sh /data/
+RUN chmod 0777 /data/autoservice.sh
 
 WORKDIR /www
+
+ENTRYPOINT [ "/bin/sh", "/data/autoservice.sh" ]
