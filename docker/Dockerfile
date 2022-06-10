@@ -1,68 +1,57 @@
-FROM ubuntu
-LABEL maintainer="kinghtdom@outlook.com"
+FROM docker.io/bitnami/spark:3
+LABEL maintainer="Edgar <kinghtdom@gmail.com>"
+LABEL description="Docker image with Spark (3.2) and Hadoop (3.3), based on bitnami/spark:3."
 
-ENV TZ "Asia/Shanghai"
-ENV LANG C.UTF-8
+USER root
 
-#设置时区 替换阿里源 安装软件
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone \
-&& sed -i "s@http://deb.debian.org@http://mirrors.aliyun.com@g" /etc/apt/sources.list && rm -Rf /var/lib/apt/lists/* \
-&& apt update \
-&& apt install -y \
-    openjdk-8-jdk \
-    scala \
-    vim \
-    net-tools \
-    openssh-server \
-    openssh-client \
-    systemctl \
-&& apt purge -y --auto-remove \
-&& ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa \
-&& systemctl enable ssh
+ENV HADOOP_HOME="/opt/hadoop"
+ENV HADOOP_CONF_DIR="$HADOOP_HOME/etc/hadoop"
+ENV HADOOP_LOG_DIR="/var/log/hadoop"
+ENV PATH="$HADOOP_HOME/hadoop/sbin:$HADOOP_HOME/bin:$PATH"
 
-ADD ./hadoop-3.3.2-src.tar.gz /usr/local/
-ENV JAVA_HOME "/usr/lib/jvm/java-8-openjdk-amd64"
-ENV HADOOP_HOME "/usr/local/hadoop"
-ENV HADOOP_CONF_DIR "${HADOOP_HOME}/etc/hadoop"
+WORKDIR /opt
 
-RUN echo "export JAVA_HOME=${JAVA_HOME}" >> /etc/profile \
-&& echo "export JRE_HOME=${JAVA_HOME}/jre" >> /etc/profile \
-&& echo "export CLASSPATH=.:${JAVA_HOME}/lib:${JRE_HOME}/lib" >> /etc/profile \
-&& echo "export PATH=${JAVA_HOME}/bin:$PATH" >> /etc/profile \
-&& echo "export HADOOP_HOME=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export PATH=$PATH:${HADOOP_HOME}/bin:${HADOOP_HOME}/sbin" >> /etc/profile \
-&& echo "export HADOOP_COMMON_HOME=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export HADOOP_HDFS_HOME=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export HADOOP_MAPRED_HOME=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export HADOOP_YARN_HOME=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export HADOOP_INSTALL=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export HADOOP_COMMON_LIB_NATIVE_DIR=${HADOOP_HOME}/lib/native" >> /etc/profile \
-&& echo "export HADOOP_CONF_DIR=${HADOOP_HOME}" >> /etc/profile \
-&& echo "export HADOOP_LIBEXEC_DIR=${HADOOP_HOME}/libexec" >> /etc/profile \
-&& echo "export JAVA_LIBRARY_PATH=${HADOOP_HOME}/lib/native:$JAVA_LIBRARY_PATH" >> /etc/profile \
-&& echo "export HADOOP_CONF_DIR=${HADOOP_HOME}/etc/hadoop" >> /etc/profile \
-&& echo "export HDFS_DATANODE_USER=root" >> /etc/profile \
-&& echo "export HDFS_DATANODE_SECURE_USER=root" >> /etc/profile \
-&& echo "export HDFS_SECONDARYNAMENODE_USER=root" >> /etc/profile \
-&& echo "export HDFS_NAMENODE_USER=root" >> /etc/profile \
-&& echo "export YARN_RESOURCEMANAGER_USER=root" >> /etc/profile \
-&& echo "export YARN_NODEMANAGER_USER=root" >> /etc/profile \
-&& mkdir -p /data/hadoop/tmp \
-&& mkdir -p /data/hadoop/hdfs/name \
-&& mkdir /data/hadoop/hdfs/data \
-&& cd /usr/local \
-&& mv hadoop-3.3.2-src hadoop
+RUN sed -i s@/deb.debian.org@/mirrors.aliyun.com/@g /etc/apt/sources.list
+RUN apt-get clean && apt-get update && apt-get install -y openssh-server vim
 
-ADD ./hadoop-env.sh $HADOOP_CONF_DIR
-ADD ./core-site.xml $HADOOP_CONF_DIR
-ADD ./hadoop-env.sh $HADOOP_CONF_DIR
-ADD ./hdfs-site.xml $HADOOP_CONF_DIR
-ADD ./mapred-site.xml $HADOOP_CONF_DIR
-ADD ./workers $HADOOP_CONF_DIR
-ADD ./yarn-site.xml $HADOOP_CONF_DIR
-ADD ./autoservice.sh /data/
-RUN chmod 0777 /data/autoservice.sh
+RUN ssh-keygen -t rsa -f /root/.ssh/id_rsa -P '' && \
+    cat /root/.ssh/id_rsa.pub >> /root/.ssh/authorized_keys
 
-WORKDIR /www
+RUN useradd --create-home --no-log-init --shell /bin/bash spark
 
-ENTRYPOINT [ "/bin/sh", "/data/autoservice.sh" ]
+COPY config/* /tmp/
+
+#RUN curl -OL https://dlcdn.apache.org/hadoop/common/hadoop-3.3.3/hadoop-3.3.3.tar.gz
+RUN mv /tmp/hadoop-3.3.3.tar.gz /opt && \
+    tar -xzvf hadoop-3.3.3.tar.gz && \
+	mv hadoop-3.3.3 hadoop && \
+	rm -rf hadoop-3.3.3.tar.gz && \
+	mkdir /var/log/hadoop
+
+RUN mkdir -p /root/hdfs/namenode && \ 
+    mkdir -p /root/hdfs/datanode && \
+    mkdir -p /root/script
+
+RUN mv /tmp/ssh_config /root/.ssh/config && \
+    mv /tmp/hadoop-env.sh $HADOOP_CONF_DIR/hadoop-env.sh && \
+    mv /tmp/hdfs-site.xml $HADOOP_CONF_DIR/hdfs-site.xml && \ 
+    mv /tmp/core-site.xml $HADOOP_CONF_DIR/core-site.xml && \
+    mv /tmp/mapred-site.xml $HADOOP_CONF_DIR/mapred-site.xml && \
+    mv /tmp/yarn-site.xml $HADOOP_CONF_DIR/yarn-site.xml && \
+    mv /tmp/workers $HADOOP_CONF_DIR/workers && \
+    mv /tmp/autoservice.sh /root/script/autoservice.sh
+
+COPY start-hadoop.sh /opt/start-hadoop.sh
+
+RUN chmod +x /opt/start-hadoop.sh && \
+    chmod +x $HADOOP_HOME/sbin/start-dfs.sh && \
+    chmod +x $HADOOP_HOME/sbin/start-yarn.sh && \
+    chmod +x /root/script/autoservice.sh
+
+RUN hdfs namenode -format
+RUN sed -i "1 a /etc/init.d/ssh start > /dev/null &" /opt/bitnami/scripts/spark/entrypoint.sh
+
+ENTRYPOINT [ "/opt/bitnami/scripts/spark/entrypoint.sh" ]
+#ENTRYPOINT [ "/root/script/autoservice.sh" ]
+CMD [ "/root/script/autoservice.sh" ]
+#CMD [ "/opt/bitnami/scripts/spark/run.sh" ]

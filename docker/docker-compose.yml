@@ -1,51 +1,74 @@
 version: '3'
 
 services:
-  hadoop1:
-    image: kinghtdom/hadoop3.3-cluster:latest
-    container_name: hadoop1
-    hostname: node1.kinghtdom.com
-    working_dir: /www
+  spark:
+    image: kinghtdom/hadoop3.3-spark3.2:3
+    hostname: master
+    container_name: bigdata_master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     volumes:
-      - bigdata:/www/
+      - ../share:/opt/share
     ports:
-      - '9870:9870'
+      - '8080:8080'
+      - '4040:4040'
       - '8088:8088'
+      - '8042:8042'
+      - '9870:9870'
+      - '19888:19888'
     networks:
-      default:
-        ipv4_address: 172.25.0.3
+      bigdata:
+        ipv4_address: 172.18.0.2
 
-  hadoop2:
-    image: kinghtdom/hadoop3.3-cluster:latest
-    container_name: hadoop2
-    hostname: node2.kinghtdom.com
-    working_dir: /www
+  spark-worker-1:
+    image: kinghtdom/hadoop3.3-spark3.2:3
+    hostname: worker1
+    container_name: bigdata_worker1
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     volumes:
-      - bigdata:/www/
+      - ../share:/opt/share
+    ports:
+      - '8081:8081'
     networks:
-      default:
-        ipv4_address: 172.25.0.4
+      bigdata:
+        ipv4_address: 172.18.0.3
 
-  hadoop3:
-    image: kinghtdom/hadoop3.3-cluster:latest
-    container_name: hadoop3
-    hostname: node3.kinghtdom.com
-    working_dir: /www
+  spark-worker-2:
+    image: kinghtdom/hadoop3.3-spark3.2:3
+    hostname: worker2
+    container_name: bigdata_worker2
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://master:7077
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_WORKER_CORES=1
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
     volumes:
-      - bigdata:/www/
+      - ../share:/opt/share
+    ports:
+      - '8082:8081'
     networks:
-      default:
-        ipv4_address: 172.25.0.5
-
-volumes:
-  bigdata:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /Users/edgar/Documents/www/BigData/src
+      bigdata:
+        ipv4_address: 172.18.0.4
 
 networks:
-  default:
-    external:
-      name: bigdata
+  bigdata:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
