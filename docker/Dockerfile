@@ -21,7 +21,7 @@ RUN useradd --create-home --no-log-init --shell /bin/bash spark
 
 COPY config/* /tmp/
 
-#RUN curl -OL https://dlcdn.apache.org/hadoop/common/hadoop-3.3.3/hadoop-3.3.3.tar.gz
+#RUN curl -OL https://dlcdn.apache.org/hadoop/common/hadoop-3.3.3/hadoop-3.3.3.tar.gz && \
 RUN mv /tmp/hadoop-3.3.3.tar.gz /opt && \
     tar -xzvf hadoop-3.3.3.tar.gz && \
 	mv hadoop-3.3.3 hadoop && \
