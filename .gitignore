@@ -3,3 +3,5 @@
 .idea/misc.xml
 docker/config/hadoop-3.3.3.tar.gz
 share/data/SogouQ*
+share/data/u.data
+share/data/output
